@@ -4,7 +4,7 @@ https://doi.org/###/zenodo.####
 Modeling of tissue disposition under deep epistemic uncertainty
 
 # Introduction
-This repository contains code and data files used in the preparation of the manuscript "Prediction variability in physiologically based pharmacokinetic modeling of tissue disposition unde3r deep uncertainty" 
+This repository contains code and data files used in the preparation of the manuscript "Prediction variability in physiologically based pharmacokinetic modeling of tissue disposition under deep uncertainty" 
 by Farahat et al. (2025)
 
 The following authors contributed to this repository:
@@ -18,7 +18,7 @@ Belinda S Akpa (University of Tennessee and National Institute for Modeling Biol
 Zachary Fox (Oak Ridge National Laboratory)
 
 # Code contents
-FarahatAkpaKpuModel.m
+AkpaFarahatKpuModel.m
 
 MathewKpuModel.m
 
@@ -34,6 +34,10 @@ GlobalSensitivityAnalysis.m
 Obach862Molecules.csv
 
 Synthetic10000Molecules.csv
+
+tissueCompositionParamsHuman.csv
+
+tissueCompositionParamsRat.csv
 
 # Usage
 *KpuModel.m
