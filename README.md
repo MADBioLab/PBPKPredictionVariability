@@ -10,24 +10,34 @@ by Farahat et al. (2025)
 The following authors contributed to this repository:
 
 Mustafa Farahat (University of Tennessee)
+
 DT Flaherty (University of Tennessee)
+
 Belinda S Akpa (University of Tennessee and National Institute for Modeling Biological Systems)
+
 Zachary Fox (Oak Ridge National Laboratory)
 
 # Code contents
 FarahatAkpaKpuModel.m
+
 MathewKpuModel.m
+
 PearceKpuModelUncalibrated.m
+
 PearceKpuModelCalibrated.m
+
 MonteCarloModeling.m
+
 GlobalSensitivityAnalysis.m
 
 # Data file contents
 Obach862Molecules.csv
+
 Synthetic10000Molecules.csv
 
 # Usage
 *KpuModel.m
+
 Each code file, *KpuModel.m, ...
 
 MonteCarloModeling.m
