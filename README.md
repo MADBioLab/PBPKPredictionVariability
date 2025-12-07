@@ -39,10 +39,31 @@ tissueCompositionParamsHuman.csv
 
 tissueCompositionParamsRat.csv
 
-# Usage
-*KpuModel.m
+tissueCompositionPearceParamsHuman.csv
 
-Each code file, *KpuModel.m, ...
+tissueCompositionPearceParamsRat.csv
+
+# Usage
+AkpaFarahatKpuModel.m
+Contains a function AkpaFarahatKpuModel(Params) with the following argument:
+
+Params - parameter struct containing molecule properties required to predict plasma-tissue partition coefficients. 
+
+Function reads in tissueCompositionParamsHuman.csv or tissueCompositionParamsRat.csv, depending on the species specified in the Params struct.
+
+MathewKpuModel.m
+Contains a function MathewKpuModel(Params) with the following argument:
+
+Params - parameter struct containing molecule properties required to predict plasma-tissue partition coefficients. 
+
+Function reads in tissueCompositionParamsHuman.csv or tissueCompositionParamsRat.csv, depending on the species specified in the Params struct
+
+PearceKpuModel.m
+Contains a function AkpaFarahatKpuModel(Params) with the following argument:
+
+Params - parameter struct containing molecule properties required to predict plasma-tissue partition coefficients. 
+
+Function reads in tissueCompositionPearceParamsHuman.csv or tissueCompositionPearceParamsRat.csv, depending on the species specified in the Params struct. Also reads in PearceRegressionParams.csv, which contains slope and intercept values for the linear regression corrections employed in the calibrated version of the Pearce model.
 
 MonteCarloModeling.m
 Contains a function MonteCarloModeling(Nsamples) with the following argument:
