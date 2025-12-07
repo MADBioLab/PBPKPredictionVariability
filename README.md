@@ -4,7 +4,7 @@ https://doi.org/###/zenodo.####
 Modeling of tissue disposition under deep epistemic uncertainty
 
 # Introduction
-This repository contains code and data files used in the preparation of the manuscript "Prediction variability in physiologically based pharmacokinetic modeling of tissue disposition under deep uncertainty" 
+This repository contains code and data files used in the preparation of the manuscript "<i>Prediction variability in physiologically based pharmacokinetic modeling of tissue disposition under deep uncertainty</i>" 
 by Farahat et al. (2025)
 
 The following authors contributed to this repository:
@@ -18,54 +18,67 @@ Belinda S Akpa (University of Tennessee and National Institute for Modeling Biol
 Zachary Fox (Oak Ridge National Laboratory)
 
 # Code contents
-AkpaFarahatKpuModel.m
+<ul>
+<li>AkpaFarahatKpuModel.m</li>
 
-MathewKpuModel.m
+<li>MathewKpuModel.m</li>
 
-PearceKpuModelUncalibrated.m
+<li>PearceKpuModel.m</li>
 
-PearceKpuModelCalibrated.m
+<li>MonteCarloModeling.m</li>
 
-MonteCarloModeling.m
+<li>GlobalSensitivityAnalysis.m</li>
 
-GlobalSensitivityAnalysis.m
+</ul>
 
 # Data file contents
-Obach862Molecules.csv
+<ul>
+  
+<li>Obach862Molecules.csv</li>
 
-Synthetic10000Molecules.csv
+<li>Synthetic10000Molecules.csv</li>
 
-tissueCompositionParamsHuman.csv
+<li>tissueCompositionParamsHuman.csv</li>
 
-tissueCompositionParamsRat.csv
+<li>tissueCompositionParamsRat.csv</li>
 
-tissueCompositionPearceParamsHuman.csv
+<li>tissueCompositionPearceParamsHuman.csv</li>
 
-tissueCompositionPearceParamsRat.csv
+<li>tissueCompositionPearceParamsRat.csv</li>
+
+</ul>
 
 # Usage
-AkpaFarahatKpuModel.m
+<ul>
+  
+<li><strong>AkpaFarahatKpuModel.m</strong>
+
 Contains a function AkpaFarahatKpuModel(Params) with the following argument:
 
-Params - parameter struct containing molecule properties required to predict plasma-tissue partition coefficients. 
+<i>Params - parameter struct containing molecule properties required to predict plasma-tissue partition coefficients.</i>
 
-Function reads in tissueCompositionParamsHuman.csv or tissueCompositionParamsRat.csv, depending on the species specified in the Params struct.
+Function reads in tissueCompositionParamsHuman.csv or tissueCompositionParamsRat.csv, depending on the species specified in the Params struct.</li>
 
-MathewKpuModel.m
+<li><strong>MathewKpuModel.m</strong>
+
 Contains a function MathewKpuModel(Params) with the following argument:
 
-Params - parameter struct containing molecule properties required to predict plasma-tissue partition coefficients. 
+<i>Params - parameter struct containing molecule properties required to predict plasma-tissue partition coefficients using the model reported by Mathew et al. (2023).</i>
 
-Function reads in tissueCompositionParamsHuman.csv or tissueCompositionParamsRat.csv, depending on the species specified in the Params struct
+Function reads in tissueCompositionParamsHuman.csv or tissueCompositionParamsRat.csv, depending on the species specified in the Params struct.</li>
 
-PearceKpuModel.m
-Contains a function AkpaFarahatKpuModel(Params) with the following argument:
+<li><strong>PearceKpuModel.m</strong>
 
-Params - parameter struct containing molecule properties required to predict plasma-tissue partition coefficients. 
+Contains a function PearceKpuModel(Params) with the following argument:
 
-Function reads in tissueCompositionPearceParamsHuman.csv or tissueCompositionPearceParamsRat.csv, depending on the species specified in the Params struct. Also reads in PearceRegressionParams.csv, which contains slope and intercept values for the linear regression corrections employed in the calibrated version of the Pearce model.
+<i>Params - parameter struct containing molecule properties required to predict plasma-tissue partition coefficients using the model reported by Pearce et al. (2017).</i>
 
-MonteCarloModeling.m
+Function reads in tissueCompositionPearceParamsHuman.csv or tissueCompositionPearceParamsRat.csv, depending on the species specified in the Params struct. Also reads in PearceRegressionParams.csv, which contains slope and intercept values for the linear regression corrections employed in the calibrated version of the Pearce model.</li>
+
+<li><strong>MonteCarloModeling.m</strong>
+
 Contains a function MonteCarloModeling(Nsamples) with the following argument:
 
-Nsamples - integer specifying the number of realizations to execute for each molecule.
+Nsamples - integer specifying the number of realizations to execute for each molecule.</li>
+
+</ul>
