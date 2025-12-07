@@ -201,4 +201,83 @@ function [Sj,Tj]=calcIndices(f)
 
 end
 
+%%
 
+function f=PBPK4Sobol(pars)
+
+    P.species='hum'; %species ('hum' or 'rat')
+    %% drug dose and IV administration duration
+    P.dose = 15; %[mg/kg]
+    P.dose_duration = mins2sec(1); %[s]
+    P.RMM=pars(1);
+    P.pKa_a=pars(2:3);
+    P.pKa_b=pars(4:5);       
+    P.fu=pars(6);
+    P.CLint=pars(7);    
+    P.logD74=pars(8);
+    P.KpuFunc=@AkpaFarahatKpuModel; %select Kpu model
+    P=PBPKSimulation(P); 
+    f=[P.Vdeq,P.thalf,P.Kp([1:11,13])',P.Cmaxu',P.AUCu',P.Teff',P.RMM];    
+end
+
+%%
+
+function seconds = mins2sec(minutes)
+    seconds = minutes * 60;
+end
+
+%%
+
+function [covMat,data]=ParameterCopulaRefArray(data)
+    rng('shuffle');
+    data = data+eps;   
+
+    %% copula fit and sampling
+    [Npts,Nprops] = size(data);
+    kdata=zeros(Npts,Nprops);
+    nudge = 1e-10;
+    lb = min(data) - nudge; %lower bound
+    ub = max(data) + nudge; %upper bound
+    
+    %% fit kernel cdf to data
+    for i=1:Nprops
+        yy=data(:,i);
+        [kdata(:,i),~] = ksdensity(yy,yy,'Support',[lb(i),ub(i)],...
+                        'BoundaryCorrection','reflection',...
+                        'function','cdf');  
+    end
+    
+    %% fit and sample from copula
+    kdata(kdata < nudge) = nudge;
+    kdata(kdata > 1-nudge) = 1-nudge;
+    rhohat = copulafit('Gaussian',kdata);
+    x = copularnd('Gaussian',rhohat,10000); 
+    covMat=cov(x);
+
+end
+
+%%
+
+function inverted=invertCopula(Data,samples,mu,CovMat)
+
+    % {'RMM','pKa[a1]','pKa[b1]','fu','CLint','logD74'}; 
+    [~,Nprops]=size(Data);  
+    nudge=1e-10;
+    lb = min(Data) - nudge; %lower bound
+    ub = max(Data) + nudge; %upper bound
+    
+    %% invert cumulative distribution
+    inverted=zeros(size(samples));
+    sigmas=sqrt(diag(CovMat))'.*ones(size(samples));
+    mus=mu.*ones(size(samples));
+    samples=normcdf(samples,mus,sigmas);
+
+    for i=1:Nprops
+        [inverted(:,i),~]=ksdensity(Data(:,i),samples(:,i),'Support',[lb(i),ub(i)],...
+                         'BoundaryCorrection','reflection',...
+                         'function','icdf');  
+    end
+
+    inverted(:,5)=10.^inverted(:,5); %convert logCLint to CLint
+
+end
