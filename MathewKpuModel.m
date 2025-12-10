@@ -83,8 +83,8 @@ function Params=MathewKpuModel(Params)
         Params.(strcat('Kpu_',(tissueNames{j}))) = Params.Kpu(j);
       
     end
-    Params.CeCp = Params.Kpu_RBCs * Params.fu_adj;
-    Params.B2P = Params.H * Params.CeCp+1 - Params.H;
+    Params.KRBC = Params.Kpu_RBCs * Params.fu_adj;
+    Params.B2P = Params.H * Params.KRBC + 1 - Params.H;
 
 end
 
@@ -149,3 +149,4 @@ function fI = SimCypIon(pKa_a,pKa_b,pH)
     fI.netCharge = (fI.fb+fI.fabb) + 2*fI.fbb - (fI.fa+fI.faab) - 2*fI.faa;
     
 end
+
