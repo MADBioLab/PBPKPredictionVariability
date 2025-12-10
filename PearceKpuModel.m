@@ -106,8 +106,8 @@ function Params=PearceKpuModel(Params)
     end
     
     %% calculate B2P
-    Params.CeCp = Params.Kpu_RBCs * Params.fu_adj;
-    Params.B2P = Params.H * Params.CeCp+1-Params.H;
+    Params.KRBC = Params.Kpu_RBCs * Params.fu_adj;
+    Params.B2P = Params.H * Params.KRBC + 1-Params.H;
 
 end
 
@@ -200,5 +200,6 @@ function [chargetype,netCharge,I]=ionization(pKa_a,pKa_b,pH)
     I.fn=fn;
     I.fz=fz;
     I.fwithPos=fwithPos;
+
 
 end
