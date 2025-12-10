@@ -164,8 +164,8 @@ function SobolForCorrelatedParamsPBPK
         end
     end
     %evaluate bootstrapping statistics
-    confidenceIntervalSi=quantile(TCjSub,[0.025,0.975],1);
-    confidenceIntervalTi=quantile(TUjSub,[0.025,0.975],1);
+    confidenceIntervalTCj=quantile(TCjSub,[0.025,0.975],1);
+    confidenceIntervalTUj=quantile(TUjSub,[0.025,0.975],1);
 
     %% ranksum statistical test for equality of medians
     for j=1:Nparams
@@ -176,12 +176,12 @@ function SobolForCorrelatedParamsPBPK
     end    
      
     %% save Sobol indices and confidence stats
-    save('Sj','TCj')
-    save('Tj','TUj')
+    save('TCj','TCj')
+    save('TUj','TUj')
     save('pval','pval')
     save('nullHyp','nullHyp')
-    save('confidenceIntervalSi','confidenceIntervalSi')
-    save('confidenceIntervalTi','confidenceIntervalTi')
+    save('confidenceIntervalTCj','confidenceIntervalTCj')
+    save('confidenceIntervalTUj','confidenceIntervalTUj')
 end
 
 %%
