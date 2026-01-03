@@ -1,0 +1,24 @@
+,Density (g/cm^3),volume [L/kg],Flow (mL/min/kg^(3/4)),vascular volume fraction
+Vein,1,0,270.343,1
+Artery,1,0,270.343,1
+Lung,1.05,0.007235,5.785,0.58
+Gut,1.044,0.0158,47.52,0.06
+Spleen,1.054,0.002467,3.182,0.33
+Heart,1.03,0.004563,9.917,0.14
+Muscle,1.041,0.3842,30.99,0.025
+Adipose,0.916,0.2086,10.74,0.18
+Kidney,1.05,0.00419,51.24,0.23
+Skin,1.117,0.0332,12.4,0.046
+Brain,1.035,0.01931,28.93,0.039
+Bone,1.976,0.07231,9.719,0.04
+Liver,1.05,0.02448,59.92,0.17
+RestOfBody,1,0,0,0
+RBCs,1.08,0,0,0
+Plasma,1,0.04286,0,0
+H,0,0,0,0.45
+GFR,0,0,5.165,0
+compartment number,14,,,
+tissue number,12,,,
+Cardiac Output,231.4,,,
+PlasmaAlbumin,0.0418,,,
+PlasmaProtein,0.074,,,
