@@ -108,7 +108,7 @@ function DrugP = SimulatePBPK(DrugP,Tmax)
                                            tSim,DrugP.dose,bodyWeight);
     end
     DrugP.CuInterstitialData = CuInterstitialData;
-    DrugP.CIntracellularData = CuIntracellularData;
+    DrugP.CuIntracellularData = CuIntracellularData;
     DrugP.T1uM = T1uM; %[hrs]
     DrugP.AUCu = AUCu; %[uM s]
     DrugP.Cmaxu = Cmaxu; %[uM]
