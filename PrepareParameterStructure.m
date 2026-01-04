@@ -95,29 +95,35 @@ function [Y,Params] = PrepareParameterStructure(Params)
     Params.Q_RestOfBody=CardiacOutput...
                 -(sum(compartmentFlows(4:Params.compartmentNumber-4))...
                 +Params.Q_Liver_hep);
+                
     %calculate body mass not otherwise accounted for (discrepancy between
     %organs and total bodyweight)
-    m_RestOfBody = Params.bodyWeight-sum(density(3:end).*compartmentVolumes(3:end)); %kg
+    m_RestOfBody = Params.bodyWeight - sum(density(3:end) .* compartmentVolumes(3:end)); %kg
     Params.V_RestOfBody = m_RestOfBody; %treating density as ~1g/cm3 
     Params.Volumes(end-1) = Params.V_RestOfBody;
-    Params.V_vasc_RestOfBody = ...
-                        Params.V_RestOfBody.*AvgVascFraction;
-    Params.V_tissue_RestOfBody = ...
-                        Params.V_RestOfBody.*(1-AvgVascFraction);
-    Params.V_plasma_RestOfBody = ...
-                        Params.V_RestOfBody.*AvgVascFraction*(1-Params.H);
-    Params.V_RBC_RestOfBody = ...
-                        Params.V_RestOfBody.*AvgVascFraction*Params.H;
 
-    % assign Kpu for RestOfBody as volume-weighted average over all other 
-    % tissues (except muscle and adipose)
+    % assign Kpu, vacular fraction, and IW2EW for RestOfBody as 
+    % volume-weighted average over all other tissues (excluding muscle and adipose)
     WeightingTissues = [1:4,7:Params.tissueNumber-1];
-    Params.Kpu_RestOfBody = ...
-        sum(Params.Volumes(WeightingTissues).*Params.Kpu(WeightingTissues))...
-        /sum(Params.Volumes(WeightingTissues));
-    Params.Kpu(end-1) = Params.Kpu_RestOfBody;
-    Params.IW2EW(end-1) = Params.IW2EW(2); %ratio of drug concentration in intracellular vs extracellular water
+    Params.Kpu_RestOfBody = weightedAverage(Params.Volumes(WeightingTissues),...
+                                            Params.Kpu(WeightingTissues));
+    Params.IW2EW(end-1) = weightedAverage(Params.Volumes(WeightingTissues),...
+                                          Params.IW2EW(WeightingTissues));
+    AvgVascFraction = weightedAverage(Params.Volumes(WeightingTissues),...
+                                      vascFraction(WeightingTissues));
 
+    Params.Kpu(end-1) = Params.Kpu_RestOfBody;
+    Params.V_vasc_RestOfBody = ...
+                        Params.V_RestOfBody .* AvgVascFraction;
+    Params.V_tissue_RestOfBody = ...
+                        Params.V_RestOfBody .* (1-AvgVascFraction);
+    Params.V_plasma_RestOfBody = ...
+                        Params.V_RestOfBody .* AvgVascFraction * (1-Params.H);
+    Params.V_RBC_RestOfBody = ...
+                        Params.V_RestOfBody .* AvgVascFraction * Params.H;
 
 end
 
+function f = weightedAverage(V,x)
+    f = sum(V .* x) / sum(V);
+end
