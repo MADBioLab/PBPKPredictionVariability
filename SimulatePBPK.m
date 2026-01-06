@@ -162,7 +162,11 @@ function [Cmax,AUC,MRT,CL,Vss,thalf] = NCAcalc(C,t,dose,bodywt)
     % apply normal trapezium rule to integrate pre-Cmax and log version post Cmax
     % and extrapolate to infinity
     Clast = C(end)*exp(-k*t(end));
-    AUC = trapz(t1,C1) + trapzlog(t2,C2) + Clast/k; % [conc.time] 
+    if k > 0
+        AUC = trapz(t1,C1) + trapzlog(t2,C2) + Clast/k; % [conc.time] 
+    else
+        AUC = trapz(t1,C1) + trapzlog(t2,C2); % [conc.time]
+    end
     
     %% calculate MRT (mean residence time)
     y = t.*C(:,1); % [conc.time]
