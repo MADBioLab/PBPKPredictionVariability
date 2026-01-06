@@ -69,8 +69,8 @@ function DrugP = SimulatePBPK(DrugP,Tmax)
     
     DrugP.C_of_t = [tSim,arterialPlasmaConc./DrugP.RMM*1e3]; % arterial plasma concn in [uM]
   
-    CuInterstitialData = cell(DrugP.tissueNumber,1); % conc unbound in intracellular water
-    CuIntracellularData = cell(DrugP.tissueNumber,1); % conc unbound in interstitial water
+    CuInterstitialData = cell(DrugP.tissueNumber,1); % conc unbound in  interstitial water
+    CuIntracellularData = cell(DrugP.tissueNumber,1); % conc unbound in intracellular water
     T1uM = zeros(DrugP.tissueNumber,1); % time above 1 uM
     AUCu = zeros(DrugP.tissueNumber,1); % area under unbound concentration curve
     Cmaxu = zeros(DrugP.tissueNumber,1); % peak unbound concentration curve
