@@ -1,4 +1,4 @@
-# PBPKPredictionVariabilityv2
+# PBPKPredictionVariability
 https://doi.org/###/zenodo.####
 
 Modeling of tissue disposition under deep epistemic uncertainty
