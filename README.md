@@ -1,11 +1,5 @@
 # PBPKPredictionVariability
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-https://doi.org/###/zenodo.####
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+
 
 Code + data for: Farahat et al. (2025), *Prediction variability in physiologically based pharmacokinetic modeling of tissue disposition under deep epistemic uncertainty*  
 Preprint DOI: 10.64898/2025.12.05.692437
