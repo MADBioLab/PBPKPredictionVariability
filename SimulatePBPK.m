@@ -14,7 +14,7 @@ function DrugP = SimulatePBPK(DrugP,Tmax)
     bodyWeight = DrugP.bodyWeight;
     
     %% initial conditions
-    %state variables are masses of drug in each model compartment [mg]
+    % state variables are masses of drug in each model compartment [mg]
     m0 = zeros(DrugP.compartmentNumber+1,1); %entries 1-13
     
     %% Calculate Vss [L/kg] as Kpu-weighted volume per unit bodyweight    
