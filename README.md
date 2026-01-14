@@ -1,137 +1,261 @@
 # PBPKPredictionVariability
-https://doi.org/###/zenodo.####
-
-Modeling of tissue disposition under deep epistemic uncertainty
-
-# Introduction
-This repository contains code and data files used in the preparation of the manuscript "<i>Prediction variability in physiologically based pharmacokinetic modeling of tissue disposition under deep uncertainty</i>" 
-by Farahat et al. (2025)
-https://doi.org/10.64898%2F2025.12.05.692437
-
-The following authors contributed to this repository:
-
-Mustafa Farahat (University of Tennessee)
-
-DT Flaherty (University of Tennessee)
-
-Zachary Fox (Oak Ridge National Laboratory)
-
-Belinda S Akpa (University of Tennessee and National Institute for Modeling Biological Systems)
 
 
-# Code contents
-<ul>
-<li>AkpaFarahatKpuModel.m</li>
+Code + data for: Farahat et al. (2025), *Prediction variability in physiologically based pharmacokinetic modeling of tissue disposition under deep epistemic uncertainty*  
+Preprint DOI: 10.64898/2025.12.05.692437
 
-<li>MathewKpuModel.m</li>
+Zenodo archive (replace placeholder when available): https://doi.org/###/zenodo.####
 
-<li>PearceKpuModel.m</li>
+---
 
-<li>PrepareParameterStructure.m</li>
+## Authors
 
-<li>PBPKodes.m</li>
+- Mustafa Farahat (University of Tennessee)
+- DT Flaherty (University of Tennessee)
+- Zachary Fox (Oak Ridge National Laboratory)
+- Belinda S Akpa (University of Tennessee; National Institute for Modeling Biological Systems)
 
-<li>SimulatePBPK.m</li>
+---
 
-<li>MonteCarloSimulations.m</li>
+## What this repository does
 
-<li>SobolForCorrelatedParamsPBPK.m</li>
+This repository provides MATLAB code that:
 
-</ul>
+1. Computes tissue partition terms (**Kpu / Kp**) with multiple tissue-partition models.
+2. Runs a whole-body PBPK simulation (ODE system) that uses those partition terms.
+3. Propagates molecular-property uncertainty via Monte Carlo (`MonteCarloSimulations.m`).
+4. Runs variance-based sensitivity analysis with correlated inputs (`SobolForCorrelatedParamsPBPK.m`).
 
-# Data file contents
-<ul>
-  
-<li>Obach862Molecules.csv</li>
+---
 
-<li>Synthetic10000Molecules.csv</li>
+## Requirements
 
-<li>tissueCompositionParamsHuman.csv</li>
+- MATLAB (any modern version with `ode15s`).
+- Parallel Computing Toolbox is optional.
+  - `MonteCarloSimulations.m` uses `parfor`.
+  - Without the toolbox, replace `parfor` with `for`.
 
-<li>tissueCompositionParamsRat.csv</li>
+---
 
-<li>tissueCompositionPearceParamsHuman.csv</li>
+## Quickstart (Monte Carlo for all molecules in a CSV)
 
-<li>tissueCompositionPearceParamsRat.csv</li>
+### Step 0 — Set MATLAB path
 
-<li>PhysiologicalParameters.csv</li>
+Set MATLAB Current Folder to the repo root (the folder that contains the `.m` and `.csv` files), then:
 
-<li>PhysiologicalParametersRat.csv</li>
+```matlab
+addpath(genpath(pwd));
+```
 
-</ul>
+### Step 1 — Build `referenceProperties` (N × 6) from a CSV
 
-# Usage
-<ul>
-  
-<li><strong>AkpaFarahatKpuModel.m</strong>
+`MonteCarloSimulations` expects a numeric matrix with **6 columns** in this order:
 
-Contains a function AkpaFarahatKpuModel(Params) with the following argument:
+1. `RMM`
+2. `pKa_a`
+3. `pKa_b`
+4. `fu`
+5. `log10(CLint)`  (the code converts this to `CLint` via `10.^log10(CLint)`)
+6. `logD74`
 
-<i>Params - parameter struct containing molecule properties required to predict plasma-tissue partition coefficients.</i>
+#### Obach (862 molecules)
 
-Function reads in tissueCompositionParamsHuman.csv or tissueCompositionParamsRat.csv, depending on the species specified in the Params struct.</li>
+```matlab
+T = readtable('Obach862Molecules.csv','VariableNamingRule','preserve');
 
-<li><strong>MathewKpuModel.m</strong>
+referenceProperties = [ ...
+    T.RMM, ...
+    T.pKa_acidic, ...
+    T.pKa_basic, ...
+    T.("fraction unbound in plasma (fu)"), ...
+    T.("log10(human inferred CLh (L/s))"), ...
+    T.logD ...
+];
+```
 
-Contains a function MathewKpuModel(Params) with the following argument:
+#### Synthetic (10,000 molecules)
 
-<i>Params - parameter struct containing molecule properties required to predict plasma-tissue partition coefficients using the model reported by Mathew et al. (2023).</i>
+```matlab
+T = readtable('Synthetic10000Molecules.csv','VariableNamingRule','preserve');
 
-Function reads in tissueCompositionParamsHuman.csv or tissueCompositionParamsRat.csv, depending on the species specified in the Params struct.</li>
+referenceProperties = [ ...
+    T.RMM, ...
+    T.("pKa donor"), ...
+    T.("pKa acceptor"), ...
+    T.fu, ...
+    T.logClint, ...
+    T.logD ...
+];
+```
 
-<li><strong>PearceKpuModel.m</strong>
+### Step 2 — Run Monte Carlo
 
-Contains a function PearceKpuModel(Params) with the following argument:
+```matlab
+selectedTissue = 1;   % numeric tissue index (see "Tissue index" section below)
+Nsamples      = 1000; % realizations per molecule
+errorScale    = 1;    % scales MAE values in parameter distributions
 
-<i>Params - parameter struct containing molecule properties required to predict plasma-tissue partition coefficients using the model reported by Pearce et al. (2017).</i>
+MonteCarloSimulations(referenceProperties, selectedTissue, Nsamples, errorScale);
+```
 
-Function reads in tissueCompositionPearceParamsHuman.csv or tissueCompositionPearceParamsRat.csv, depending on the species specified in the Params struct. Also reads in PearceRegressionParams.csv, which contains slope and intercept values for the linear regression corrections employed in the calibrated version of the Pearce model.</li>
+---
 
-<li><strong>PrepareParameterStructure.m</strong>
+## How the code pieces connect
 
-Contains a function PrepareParameterStructure(Params) with the following argument:
+At a high level:
 
-<i>Params - parameter struct </i> </li>
+- `MonteCarloSimulations` samples uncertain inputs and calls `SimulatePBPK` many times.
+- `SimulatePBPK` builds the full PBPK parameter struct via `PrepareParameterStructure`, then solves the ODE system via `ode15s` using `PBPKodes`.
 
-<li><strong>PBPKodes.m</strong>
+Inside `MonteCarloSimulations`, each Monte Carlo draw runs **four** tissue-partition models:
 
-Contains a function PBPKodes(time, m, P, Y, bodyWeight) with the following arguments:
+1. `AkpaFarahatKpuModel`
+2. `MathewKpuModel`
+3. `PearceKpuModel` (calibrated Pearce; reads regression parameters)
+4. `PearceNoCorrectionsKpuModel` (uncalibrated Pearce)
 
-<i>time - current simulation time [s]
+---
 
-m - array containing total mass of drug in each model compartment [mg]
+## Outputs from Monte Carlo
 
-P - parameter struct containing model parameters (drug and system-specific)
+`MonteCarloSimulations.m` saves two `.mat` files to the current folder:
 
-Y - struct containing organ subcompartment concentrations for all organs
+- `nominalResults.mat`
+  - size: `(Noutputs × Nmodels) × Nmolecules`
+- `MCResults.mat`
+  - size: `Nsamples × (Noutputs × Nmodels) × Nmolecules`
 
-bodyWeight - total bodyweight [kg] </i> </li>
+In the current code:
+- `Noutputs = 4`  (Vss, Cmaxu, AUCu, T1uM)
+- `Nmodels  = 4`
 
-<li><strong>SimulatePBPK.m</strong>
+So the “feature” dimension equals `4 × 4 = 16`.
 
-Contains a function SimulatePBPK(DrugP, Tmax) with the following arguments:
+Outcome blocks (each block has 4 columns, one per model, in the model order above):
 
-<i>DrugP - struct containing drug-specific parameters 
+- Columns 1–4: `Vss`
+- Columns 5–8: `Cmaxu` (tissue-specific)
+- Columns 9–12: `AUCu`  (tissue-specific; stored as uM·min)
+- Columns 13–16: `T1uM` (tissue-specific; stored as hours)
 
-Tmax - desired simulation timespan [hrs] </i> </li>
+---
 
-<li><strong>MonteCarloSimulations.m</strong>
+## Tissue index (`selectedTissue`)
 
-Contains a function MonteCarloSimulations(referenceProperties, selectedTissue, Nsamples, errorScale) with the following arguments:
+`selectedTissue` selects the tissue for `Cmaxu`, `AUCu`, and `T1uM`.
 
-<i> referenceProperties - drug-specific properties for molecules of interest
+The tissue list is created inside `PrepareParameterStructure`. To print it, run a small “dummy” parameter struct:
 
-selectedTissue - numerical ID of tissue of interest
+```matlab
+P = struct;
+P.species  = 'hum';
+P.KpuFunc  = @AkpaFarahatKpuModel;
 
-Nsamples - integer specifying the number of realizations to execute for each molecule 
+P.RMM    = 300;
+P.pKa_a  = 7;
+P.pKa_b  = 7;
+P.fu     = 0.1;
+P.CLint  = 1e-3;
+P.logD74 = 2;
 
-errorScale - scaling factor for mean average errors in parameter distributions </i> </li>
+[~, P2] = PrepareParameterStructure(P);
+disp(P2.tissueNames);
+```
 
-<li><strong>SobolForCorrelatedParamsPBPK.m</strong>
+Pick the index that matches your tissue of interest.
 
-Contains a function SobolForCorrelatedParamsPBPK(ReferenceData) with the following argument:
+---
 
-<i> ReferenceData - array of molecule properties representating the chemical space of interest. NReference rows (number of molecules) and 6 columns. 
-    Columns should be (1) molar mass, (2) donor pKa, (3) acceptor pKa, (4) fraction unbound, (5) logCLint, (6) logD74. </i> </li>
+## Correlated Sobol GSA
 
-</ul>
+`SobolForCorrelatedParamsPBPK` expects `ReferenceData` with **N × 6** columns:
+
+(1) molar mass, (2) donor pKa, (3) acceptor pKa, (4) fu, (5) logCLint, (6) logD74.
+
+Example:
+
+```matlab
+ReferenceData = referenceProperties;
+SobolForCorrelatedParamsPBPK(ReferenceData);
+```
+
+---
+
+## Repository contents
+
+### Code files
+
+#### `AkpaFarahatKpuModel.m`
+Function: `AkpaFarahatKpuModel(Params)`  
+Reads: `tissueCompositionParamsHuman.csv` or `tissueCompositionParamsRat.csv` (species in `Params.species`).
+
+#### `MathewKpuModel.m`
+Function: `MathewKpuModel(Params)`  
+Reads: `tissueCompositionParamsHuman.csv` or `tissueCompositionParamsRat.csv` (species in `Params.species`).
+
+#### `PearceKpuModel.m`
+Function: `PearceKpuModel(Params)`  
+Reads:
+- `tissueCompositionPearceParamsHuman.csv` or `tissueCompositionPearceParamsRat.csv` (species in `Params.species`)
+- `PearceRegressionParams.csv` (slope/intercept for regression corrections used in the calibrated Pearce model)
+
+#### `PearceNoCorrectionsKpuModel.m`
+Function: `PearceNoCorrectionsKpuModel(Params)`  
+Purpose: Pearce model run without regression corrections (uncalibrated variant).  
+Reads: `tissueCompositionPearceParamsHuman.csv` or `tissueCompositionPearceParamsRat.csv`.
+
+#### `PrepareParameterStructure.m`
+Function: `[Y, Params] = PrepareParameterStructure(Params)`  
+Reads: `PhysiologicalParameters.csv` (human) or `PhysiologicalParametersRat.csv` (rat).  
+Creates: full physiology + compartment parameters and initial-condition struct `Y`.  
+Calls: the Kpu model via the function handle in `Params.KpuFunc`.
+
+#### `PBPKodes.m`
+Function: `PBPKodes(time, m, P, Y, bodyWeight)`  
+ODE right-hand side used by the PBPK solver.
+
+#### `SimulatePBPK.m`
+Function: `SimulatePBPK(DrugP, Tmax)`  
+Calls: `PrepareParameterStructure(DrugP)` then solves the ODE system via `PBPKodes`.
+
+#### `MonteCarloSimulations.m`
+Function: `MonteCarloSimulations(referenceProperties, selectedTissue, Nsamples, errorScale)`  
+Runs Monte Carlo over molecular properties, then saves `MCResults.mat` and `nominalResults.mat`.
+
+#### `SobolForCorrelatedParamsPBPK.m`
+Function: `SobolForCorrelatedParamsPBPK(ReferenceData)`  
+Computes variance-based sensitivity indices for correlated inputs.
+
+### Data files
+
+#### Molecule property inputs
+- `Obach862Molecules.csv` (862 rows)
+- `Synthetic10000Molecules.csv` (10,000 rows)
+
+#### Physiology + tissue composition inputs
+- `PhysiologicalParameters.csv`
+- `PhysiologicalParametersRat.csv`
+- `tissueCompositionParamsHuman.csv`
+- `tissueCompositionParamsRat.csv`
+- `tissueCompositionPearceParamsHuman.csv`
+- `tissueCompositionPearceParamsRat.csv`
+- `PearceRegressionParams.csv`
+
+---
+
+## Troubleshooting
+
+- **MATLAB cannot find a `.csv` file**  
+  Set Current Folder to the repo root and run `addpath(genpath(pwd))`.
+
+- **Error about `parfor`**  
+  Replace `parfor` with `for` inside `MonteCarloSimulations.m`.
+
+- **Column name mismatch after `readtable`**  
+  Use `readtable(...,'VariableNamingRule','preserve')` and access columns via `T.("...")`.
+
+---
+
+## License
+
+AGPL-3.0 (see `LICENSE`).
