@@ -4,8 +4,7 @@
 Code + data for: Farahat et al. (2025), *Prediction variability in physiologically based pharmacokinetic modeling of tissue disposition under deep epistemic uncertainty*  
 Preprint DOI: 10.64898/2025.12.05.692437
 
-Zenodo archive (replace placeholder when available): https://doi.org/###/zenodo.####
-
+Zenodo archive: TBD (will be added after release)
 ---
 
 ## Authors
@@ -21,7 +20,7 @@ Zenodo archive (replace placeholder when available): https://doi.org/###/zenodo.
 
 This repository provides MATLAB code that:
 
-1. Computes tissue partition terms (**Kpu / Kp**) with multiple tissue-partition models.
+1. Computes tissue partition terms (`Kpu`) with multiple tissue-partition models.
 2. Runs a whole-body PBPK simulation (ODE system) that uses those partition terms.
 3. Propagates molecular-property uncertainty via Monte Carlo (`MonteCarloSimulations.m`).
 4. Runs variance-based sensitivity analysis with correlated inputs (`SobolForCorrelatedParamsPBPK.m`).
@@ -30,7 +29,7 @@ This repository provides MATLAB code that:
 
 ## Requirements
 
-- MATLAB (any modern version with `ode15s`).
+- MATLAB R2023a (uses `ode15s`).
 - Parallel Computing Toolbox is optional.
   - `MonteCarloSimulations.m` uses `parfor`.
   - Without the toolbox, replace `parfor` with `for`.
@@ -52,10 +51,10 @@ addpath(genpath(pwd));
 `MonteCarloSimulations` expects a numeric matrix with **6 columns** in this order:
 
 1. `RMM`
-2. `pKa_a`
-3. `pKa_b`
+2. `pKa_donor`
+3. `pKa_acceptor`
 4. `fu`
-5. `log10(CLint)`  (the code converts this to `CLint` via `10.^log10(CLint)`)
+5. `log10(human inferred CLh_int [L/s])` (converted to `CLint` via `10.^...`)
 6. `logD74`
 
 #### Obach (862 molecules)
@@ -65,14 +64,13 @@ T = readtable('Obach862Molecules.csv','VariableNamingRule','preserve');
 
 referenceProperties = [ ...
     T.RMM, ...
-    T.pKa_acidic, ...
-    T.pKa_basic, ...
-    T.("fraction unbound in plasma (fu)"), ...
-    T.("log10(human inferred CLh (L/s))"), ...
-    T.logD ...
+    T.pKa_donor, ...
+    T.pKa_acceptor, ...
+    T.fu, ...
+    T.("log10(human inferred CLh_int [L/s])"), ...
+    T.logD74 ...
 ];
 ```
-
 #### Synthetic (10,000 molecules)
 
 ```matlab
@@ -80,11 +78,11 @@ T = readtable('Synthetic10000Molecules.csv','VariableNamingRule','preserve');
 
 referenceProperties = [ ...
     T.RMM, ...
-    T.("pKa donor"), ...
-    T.("pKa acceptor"), ...
+    T.pKa_donor, ...
+    T.pKa_acceptor, ...
     T.fu, ...
-    T.logClint, ...
-    T.logD ...
+    T.("log10(human inferred CLh_int [L/s])"), ...
+    T.logD74 ...
 ];
 ```
 
@@ -112,7 +110,7 @@ Inside `MonteCarloSimulations`, each Monte Carlo draw runs **four** tissue-parti
 1. `AkpaFarahatKpuModel`
 2. `MathewKpuModel`
 3. `PearceKpuModel` (calibrated Pearce; reads regression parameters)
-4. `PearceNoCorrectionsKpuModel` (uncalibrated Pearce)
+4. `PearceKpuModelNoCalibration` (uncalibrated Pearce; does not use regression corrections)
 
 ---
 
@@ -126,7 +124,7 @@ Inside `MonteCarloSimulations`, each Monte Carlo draw runs **four** tissue-parti
   - size: `Nsamples × (Noutputs × Nmodels) × Nmolecules`
 
 In the current code:
-- `Noutputs = 4`  (Vss, Cmaxu, AUCu, T1uM)
+- `Noutputs = 4`  (Vss, Cmaxu, AUCu, T0.1µM)
 - `Nmodels  = 4`
 
 So the “feature” dimension equals `4 × 4 = 16`.
@@ -135,14 +133,14 @@ Outcome blocks (each block has 4 columns, one per model, in the model order abov
 
 - Columns 1–4: `Vss`
 - Columns 5–8: `Cmaxu` (tissue-specific)
-- Columns 9–12: `AUCu`  (tissue-specific; stored as uM·min)
-- Columns 13–16: `T1uM` (tissue-specific; stored as hours)
+- Columns 9–12: `AUCu`  (tissue-specific; stored as µM·min)
+- Columns 13–16: `T0.1µM` (tissue-specific; stored as hours)
 
 ---
 
 ## Tissue index (`selectedTissue`)
 
-`selectedTissue` selects the tissue for `Cmaxu`, `AUCu`, and `T1uM`.
+`selectedTissue` selects the tissue for `Cmaxu`, `AUCu`, and `T0.1µM`.
 
 The tissue list is created inside `PrepareParameterStructure`. To print it, run a small “dummy” parameter struct:
 
@@ -170,7 +168,8 @@ Pick the index that matches your tissue of interest.
 
 `SobolForCorrelatedParamsPBPK` expects `ReferenceData` with **N × 6** columns:
 
-(1) molar mass, (2) donor pKa, (3) acceptor pKa, (4) fu, (5) logCLint, (6) logD74.
+(1) molar mass, (2) donor pKa, (3) acceptor pKa, (4) fu, (5) `log10(human inferred CLh_int [L/s])`, (6) logD74.
+
 
 Example:
 
@@ -199,8 +198,8 @@ Reads:
 - `tissueCompositionPearceParamsHuman.csv` or `tissueCompositionPearceParamsRat.csv` (species in `Params.species`)
 - `PearceRegressionParams.csv` (slope/intercept for regression corrections used in the calibrated Pearce model)
 
-#### `PearceNoCorrectionsKpuModel.m`
-Function: `PearceNoCorrectionsKpuModel(Params)`  
+#### `PearceKpuModelNoCalibration.m`
+Function: `PearceKpuModelNoCalibration(Params)`  
 Purpose: Pearce model run without regression corrections (uncalibrated variant).  
 Reads: `tissueCompositionPearceParamsHuman.csv` or `tissueCompositionPearceParamsRat.csv`.
 
