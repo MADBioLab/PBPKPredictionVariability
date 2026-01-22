@@ -1,4 +1,4 @@
-function Params=PearceNoCorrectionsKpuModel(Params)
+function Params=PearceKpuModelNoCalibration(Params)
 
     %% read in input parameters
     if strcmp(Params.species,'hum')
