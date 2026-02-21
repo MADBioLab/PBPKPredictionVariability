@@ -149,7 +149,7 @@ function [chargetype,netCharge,I]=ionization(pKa_a,pKa_b,pH)
     %% weighted molecular charge contribution (weighted by probability of each
     %% molecular ionization state)
     Pcharged=ionzn;
-    Puncharged=100-ionzn;
+    Puncharged=1-ionzn;
     % -1 charge
     fa_combinations = [1 0];
     % +1 charge
