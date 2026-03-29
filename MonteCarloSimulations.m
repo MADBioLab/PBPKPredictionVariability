@@ -125,7 +125,7 @@ function [MCoutcomes,nominalOutcomes] = sampleAndSimulate(...
         P2 = SimulatePBPK(P,Tmax); 
         P.KpuFunc = @PearceKpuModel;
         P3 = SimulatePBPK(P,Tmax); 
-        P.KpuFunc = @PearceNoCorrectionsKpuModel;
+        P.KpuFunc = @PearceKpuModelNoCalibration;
         P4 = SimulatePBPK(P,Tmax);
 
         Vdeq(i,:) = [P1.Vdeq,P2.Vdeq,P3.Vdeq,P4.Vdeq];
