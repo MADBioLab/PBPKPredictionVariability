@@ -71,7 +71,7 @@ function DrugP = SimulatePBPK(DrugP,Tmax)
   
     CuInterstitialData = cell(DrugP.tissueNumber,1); % conc unbound in  interstitial water
     CuIntracellularData = cell(DrugP.tissueNumber,1); % conc unbound in intracellular water
-    T1uM = zeros(DrugP.tissueNumber,1); % time above 1 uM
+    T0_1uM = zeros(DrugP.tissueNumber,1); % time above 1 uM
     AUCu = zeros(DrugP.tissueNumber,1); % area under unbound concentration curve
     Cmaxu = zeros(DrugP.tissueNumber,1); % peak unbound concentration curve
 
@@ -97,9 +97,9 @@ function DrugP = SimulatePBPK(DrugP,Tmax)
         % evaluate time above 1 uM
         [j,~] = find(CuIntracellularData{i}(:,2) > 0.1);
         if isempty(j)
-            T1uM(i) = eps;
+            T0_1uM(i) = eps;
         else
-            T1uM(i) = secs2hrs(CuIntracellularData{i}(max(j),1)...
+            T0_1uM(i) = secs2hrs(CuIntracellularData{i}(max(j),1)...
                              - CuIntracellularData{i}(min(j),1)); % [hrs]
         end
 
@@ -109,7 +109,7 @@ function DrugP = SimulatePBPK(DrugP,Tmax)
     end
     DrugP.CuInterstitialData = CuInterstitialData;
     DrugP.CuIntracellularData = CuIntracellularData;
-    DrugP.T1uM = T1uM; %[hrs]
+    DrugP.T0_1uM = T0_1uM; %[hrs]
     DrugP.AUCu = AUCu; %[uM s]
     DrugP.Cmaxu = Cmaxu; %[uM]
     

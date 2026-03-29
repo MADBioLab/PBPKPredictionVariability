@@ -14,7 +14,7 @@ function MonteCarloSimulations(referenceProperties, selectedTissue, Nsamples, er
     species = 'hum'; % specify species
 
     Nmolecules = size(referenceProperties,1); %number of molecules to interrogate
-    Noutputs = 4; %number of PK outcomes to interrogate (Vss, Cmaxu, AUCu, T1uM)
+    Noutputs = 4; %number of PK outcomes to interrogate (Vss, Cmaxu, AUCu, T0_1uM)
     Nmodels = 4; %number of Kpu models to be evaluated
     
     %% evaluate Monte Carlo outcomes for each molecule
@@ -101,7 +101,7 @@ function [MCoutcomes,nominalOutcomes] = sampleAndSimulate(...
     %% intialize result arrays for model predictions
     Nmodels = 4;
     Vdeq = zeros(Nsamples+1,Nmodels);
-    T1uM = zeros(Nsamples+1,Nmodels); 
+    T0_1uM = zeros(Nsamples+1,Nmodels); 
     Cmaxu = zeros(Nsamples+1,Nmodels);
     AUCu = zeros(Nsamples+1,Nmodels);
 
@@ -137,15 +137,15 @@ function [MCoutcomes,nominalOutcomes] = sampleAndSimulate(...
                       P2.Cmaxu(selectedTissue),...
                       P3.Cmaxu(selectedTissue),...
                       P4.Cmaxu(selectedTissue)]; %uM
-        T1uM(i,:) = [P1.T1uM(selectedTissue),...
-                     P2.T1uM(selectedTissue),...
-                     P3.T1uM(selectedTissue),...
-                     P4.T1uM(selectedTissue)]; %hrs    
+        T0_1uM(i,:) = [P1.T0_1uM(selectedTissue),...
+                     P2.T0_1uM(selectedTissue),...
+                     P3.T0_1uM(selectedTissue),...
+                     P4.T0_1uM(selectedTissue)]; %hrs    
 
     end
     
     %% assemble output for all Monte Carlo realizations, all models, and all outcomes 
-    MCoutcomes = [Vdeq,Cmaxu,AUCu,T1uM];
+    MCoutcomes = [Vdeq,Cmaxu,AUCu,T0_1uM];
     nominalOutcomes = MCoutcomes(1,:);
     MCoutcomes = MCoutcomes(2:end,:);
 
