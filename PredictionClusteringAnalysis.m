@@ -1,5 +1,3 @@
-function PredictionClusteringAnalysis(MCResults,drugParams,preprocessOption,...
-                                      featureTransformOption,clusterFlag,plotFlag)
     % MCResults: PK prediction outputs from MonteCarlo simulations
     % drugParams: biophysicochemical property matrix for molecules
     % preprocessOption: 'pca', 'whiten', or 'raw' for PK data preprocessing
@@ -63,7 +61,9 @@ function PredictionClusteringAnalysis(MCResults,drugParams,preprocessOption,...
     if strcmp(featureTransformOption,'minmax')
         Xclust = minMaxNorm(X,'col'); %min-max normalize features 
     elseif strcmp(featureTransformOption,'pca') 
-        [~, Xclust, ~, ~, explained] = pca(X); %PCA-transform features
+        [pcaMat, Xclust, ~, ~, explained,pcaMeans] = pca(X); %PCA-transform features
+        save('pcaMat','pcaMat');
+        save('pcaMeans','pcaMeans');
     elseif strcmp(featureTransformOption,'vectorNorm')     
         Xclust = X./vecnorm(X); %vector normalize features
     elseif strcmp(featureTransformOption,'zscore') 
@@ -106,7 +106,10 @@ function PredictionClusteringAnalysis(MCResults,drugParams,preprocessOption,...
         % pca, whitened, or tsne
         dimensionFlag = 'pca'; 
         clusterScatterPlot(Xclust, syntheticIDX, dimensionFlag, pairNames, Noutcomes, fontSize);    
-          
+
+        %% perform statistical tests on cluster properties
+        moleculeStats(syntheticIDX, drugParams(:,1:6), ParamLabels);
+
         %% calculate agreement between model predictions and plot
         clusterConcordances(normalizedPKdata, Noutcomes, Nmodels, ...
                             Nclusters, syntheticIDX, PKoutcomeNames, fontSize);   
@@ -121,7 +124,7 @@ function PredictionClusteringAnalysis(MCResults,drugParams,preprocessOption,...
     end
     
     %% save arrays for each cluster's parameters
-    saveClusterProperties(drugParams, syntheticIDX);
+    saveClusterProperties(drugParams(:,1:6), syntheticIDX);
 
 end
 
@@ -395,7 +398,7 @@ function agreement = ...
     b = colorbar; 
     b.Layout.Tile = 'East';
     b.Label.String = 'concordance correlation';
-    b.Label.FontSize = 1.4*fontSize;
+    b.Label.FontSize = 1.5*fontSize;
     b.Label.Interpreter = 'latex';
     b.TickLabelInterpreter = 'latex';
     b.FontSize = fontSize;
@@ -453,21 +456,25 @@ function plotClusterPrototypes(Xclust, dataMC, kCentroids, idx, ...
         for j = 1:Nclusters
             nexttile(tilenum(t1006,j,i));
             for k = 1:Nmodels
-                h = histogram(dataMC{i}(:,k,prototypes(j)),50,'normalization','pdf',...
+                selectedData = dataMC{i}(:,k,prototypes(j));
+                selectedData = selectedData(selectedData>log10(eps));
+                nbins = max([floor(range(selectedData))*12,10]);
+                h = histogram(selectedData,nbins,...
+                           'normalization','pdf',...
                            'displaystyle','stairs','linewidth',2,...
                            'edgecolor',modelColors{k});
                 hold on;
     
                 %determine axis limits
-                if i == Noutcomes
-                    currentMin(i,1) = min([h.BinEdges(h.BinEdges>-3),currentMin(i,1)]);
-                    currentMax(i,1) = max([h.BinEdges(h.BinEdges<3),currentMax(i,1)]);
-                    currentMax(i,2) = max([h.Values,currentMax(i,2)]);
-                else
+                % if i == Noutcomes
+                %     currentMin(i,1) = min([h.BinEdges(h.BinEdges>-3),currentMin(i,1)]);
+                %     currentMax(i,1) = max([h.BinEdges(h.BinEdges<3),currentMax(i,1)]);
+                %     currentMax(i,2) = max([h.Values,currentMax(i,2)]);
+                % else
                     currentMin(i,1) = min([h.BinEdges,currentMin(i,1)]);
                     currentMax(i,1) = max([h.BinEdges,currentMax(i,1)]);
                     currentMax(i,2) = max([h.Values,currentMax(i,2)]);
-                end
+                % end
             end
         end
 
@@ -585,8 +592,8 @@ end
 
 %%
 
-function [whitenedForWasserstein, dataMCNorm, dataMC] = ...
-    whiteningPreprocess(MCResults, Noutcomes, Ndrugs, Nrealizations, Nmodels, existingFlag)
+function [whitenedForWasserstein, dataMCNorm, dataMC] = whiteningPreprocess(...
+          MCResults, Noutcomes, Ndrugs, Nrealizations, Nmodels, existingFlag)
     %% unpack Monte Carlo predictions
     % Nrealizations x Nmodels x Ndrugs
     Vss = (squeeze(MCResults(:,1:4,:)));
@@ -595,29 +602,32 @@ function [whitenedForWasserstein, dataMCNorm, dataMC] = ...
     T = (squeeze(MCResults(:,13:16,:)));
     
     %% stack outcomes data into a single struct
-    dataMC=cell(Noutcomes,1);
-    dataMCNorm=cell(Noutcomes,1);
+    dataMC = cell(Noutcomes,1);
+    dataMCNorm = cell(Noutcomes,1);
     dataMC{1} = Vss;
     dataMC{2} = Cmaxu;
     dataMC{3} = AUCu;
     dataMC{4} = T;
 
-    %% logtransform and max-min normalize PK data 
+    %% logtransform and vector normalize PK data 
     for m = 1:Noutcomes 
         dataMC{m} = log10(dataMC{m});
-        dataMCNorm{m}=dataMC{m}./norm(dataMC{m}(:));
+        dataMCNorm{m} = dataMC{m}./norm(dataMC{m}(:));
     end
     
-    %% configure data as rank 2 array for whitening
+    %% configure data as 2D array for whitening
     rank2Data = zeros(Nmodels*Ndrugs*Nrealizations,Noutcomes);
+    modelIndex = zeros(Nmodels*Ndrugs*Nrealizations,1);
     for i = 1:Nmodels
-        A = squeeze(dataMCNorm{1}(:,i,:));
-        B = squeeze(dataMCNorm{2}(:,i,:));
-        C = squeeze(dataMCNorm{3}(:,i,:));
-        D = squeeze(dataMCNorm{4}(:,i,:));
+        A = squeeze(dataMC{1}(:,i,:));
+        B = squeeze(dataMC{2}(:,i,:));
+        C = squeeze(dataMC{3}(:,i,:));
+        D = squeeze(dataMC{4}(:,i,:));
         rank2Data((1:Ndrugs*Nrealizations)...
                 + (i-1)*Ndrugs*Nrealizations,:) = ...
                   [A(:),B(:),C(:),D(:)];
+        modelIndex((1:Ndrugs*Nrealizations)...
+                + (i-1)*Ndrugs*Nrealizations) = i;
     end
 
     %% WHITEN PK DATA to remove correlations
@@ -625,17 +635,28 @@ function [whitenedForWasserstein, dataMCNorm, dataMC] = ...
         % load existing means and transformation matrix
         load whiteningMeans
         load whiteningMatrix
-        whitenedRank2Data = (rank2Data - whiteningMeans) * whiteningMatrix;
+        whitenedRank2Data = zeros(size(rank2Data));
+        for i = 1:Nmodels
+            data = rank2Data(modelIndex==i,:);
+            rank2Data(modelIndex==i,:) = data - mean(data);
+            whitenedRank2Data(modelIndex==i,:) = ...
+                rank2Data(modelIndex==i,:) * whiteningMatrix;
+            % whitenedRank2Data(modelIndex==i,:) =...
+            %    whitenedRank2Data(modelIndex==i,:) + whiteningMeans(i,:);
+            whitenedRank2Data(modelIndex==i,:) =...
+               whitenedRank2Data(modelIndex==i,:) + mean(data) * whiteningMatrix;
+        end
     else
-        %% matrix for future transformations
-        [whitenedRank2Data, whiteningMeans, ~, whiteningMatrix] = whiten(rank2Data,1e-8);
+        [whitenedRank2Data, whiteningMeans, whiteningMatrix] = ...
+                                pooledVarianceWhitening(rank2Data,modelIndex);
+        % [whitenedRank2Data, whiteningMeans, ~, whiteningMatrix] = whiten(rank2Data,1e-8);
         clear rank2Data
         % Preserve means and whitening matrix 
         save('whiteningMeans','whiteningMeans')
         save('whiteningMatrix','whiteningMatrix')
     end
     
-    %% reconfigure data to rank 3D array
+    %% reconfigure data to 3D array
     whitenedForWasserstein = zeros(Ndrugs*Nrealizations, Noutcomes, Nmodels);
     for i=1:Nmodels
         whitenedForWasserstein(:,:,i) = ...
@@ -646,8 +667,8 @@ end
 
 %%
 
-function [PCAForWasserstein, dataMCNorm, dataMC] = ...
-    PCAPreprocess(MCResults, Noutcomes, Ndrugs, Nrealizations, Nmodels, existingFlag)
+function [PCAForWasserstein, dataMCNorm, dataMC] = PCAPreprocess(...
+          MCResults, Noutcomes, Ndrugs, Nrealizations, Nmodels, existingFlag)
     %% unpack Monte Carlo predictions
     % Nrealizations x Nmodels x Ndrugs
     Vss = (squeeze(MCResults(:,1:4,:)));
@@ -669,7 +690,7 @@ function [PCAForWasserstein, dataMCNorm, dataMC] = ...
         dataMCNorm{m} = dataMC{m}./norm(dataMC{m}(:));
     end
     
-    %% configure data as rank 2 array for whitening
+    %% configure data as 2D array for whitening
     rank2Data = zeros(Nmodels*Ndrugs*Nrealizations,Noutcomes);
     for i = 1:Nmodels
         A = squeeze(dataMCNorm{1}(:,i,:));
@@ -696,7 +717,7 @@ function [PCAForWasserstein, dataMCNorm, dataMC] = ...
         save('pcaMatrix','pcaMatrix')
     end
     
-    %% reconfigure data to rank 3D array
+    %% reconfigure data to 3D array
     PCAForWasserstein = zeros(Ndrugs*Nrealizations, Noutcomes, Nmodels);
     for i=1:Nmodels
         PCAForWasserstein(:,:,i) = ...
@@ -707,8 +728,8 @@ end
 
 %%
 
-function [NormForWasserstein, dataMCNorm, dataMC] = ...
-    NormPreprocess(MCResults, Noutcomes, Ndrugs, Nrealizations, Nmodels)
+function [NormForWasserstein, dataMCNorm, dataMC] = NormPreprocess(...
+          MCResults, Noutcomes, Ndrugs, Nrealizations, Nmodels)
     %% unpack Monte Carlo predictions
     % Nrealizations x Nmodels x Ndrugs
     Vss = (squeeze(MCResults(:,1:4,:)));
@@ -727,10 +748,10 @@ function [NormForWasserstein, dataMCNorm, dataMC] = ...
     %% logtransform and max-min normalize PK data 
     for m = 1:Noutcomes 
         dataMC{m} = log10(dataMC{m});
-        dataMCNorm{m} = dataMC{m};%./norm(dataMC{m}(:)) ; 
+        dataMCNorm{m} = dataMC{m}./norm(dataMC{m}(:)) ; 
     end
     
-    %% configure data as rank 2 array for whitening
+    %% configure data as 2D array for whitening
     rank2Data = zeros(Nmodels*Ndrugs*Nrealizations,Noutcomes);
     for i = 1:Nmodels
         A = squeeze(dataMCNorm{1}(:,i,:));
@@ -742,7 +763,7 @@ function [NormForWasserstein, dataMCNorm, dataMC] = ...
                   [A(:),B(:),C(:),D(:)];
     end
     
-    %% reconfigure data to rank 3D array
+    %% reconfigure data to 3D array
     NormForWasserstein = zeros(Ndrugs*Nrealizations, Noutcomes, Nmodels);
     for i = 1:Nmodels
         NormForWasserstein(:,:,i) = ...
@@ -870,20 +891,20 @@ end
 
 %%
 
-function [Xwh, mu, invMat, whMat] = whiten(X,epsilon)
-    %
-    % Author: Colorado Reed colorado-reed@uiowa.edu
-    if ~exist('epsilon','var')
-        epsilon = 0.0001;
-    end
-    mu = mean(X); 
-    X = bsxfun(@minus, X, mu);
-    A = X'*X;
-    [V,D,~] = svd(A);
-    whMat = sqrt(size(X,1)-1)*V*sqrtm(inv(D + eye(size(D))*epsilon))*V';
-    Xwh = X*whMat;  
-    invMat = pinv(whMat);
-end
+% function [Xwh, mu, invMat, whMat] = whiten(X,epsilon)
+%     %
+%     % Author: Colorado Reed colorado-reed@uiowa.edu
+%     if ~exist('epsilon','var')
+%         epsilon = 0.0001;
+%     end
+%     mu = mean(X); 
+%     X = bsxfun(@minus, X, mu);
+%     A = X'*X;
+%     [V,D,~] = svd(A);
+%     whMat = sqrt(size(X,1)-1)*V*sqrtm(inv(D + eye(size(D))*epsilon))*V';
+%     Xwh = X*whMat;  
+%     invMat = pinv(whMat);
+% end
 
 %%
 
@@ -1004,7 +1025,7 @@ function pChemStats = plotPropertySwarms(ionClassTypes,ionClasses,...
     lg.Interpreter = 'latex';
     lg.Layout.Tile = 'North';
     lg.Orientation = 'horizontal';
-    lg.FontSize = 1.5*fs;
+    lg.FontSize = 1.2*fs;
     t1005.XLabel.Interpreter = 'latex';
     t1005.XLabel.String = 'cluster';
     t1005.XLabel.FontSize = 1.5*fs;
@@ -1062,4 +1083,209 @@ function makeScatterPlots(score,idx,chosenAxes,pairs,fs)
     lgd.Orientation = 'horizontal';
     lgd.FontSize = fs;
 
+end
+
+%%
+
+function moleculeStats(idx, drugParams, ParamLabels)
+
+    % RGB codes and other formatting for plotting
+    markerColors = [[0 0 0];
+              [100 100 100];
+              [190 190 190];
+              [0 0 0];
+              [100 100 100];
+              [190 190 190]]./256;
+    effectSizeLineColor = [67 126 117]./256;
+    fs = 18;
+
+    markerChoice = {'o','^','d','s','+','x'};
+
+    Nparams = size(drugParams,2);
+    clusters = unique(idx);
+    Nclusters = length(clusters);
+    Npanels = Nparams * nchoosek(Nclusters,2);
+    r = floor(sqrt(Npanels));
+    c = ceil(Npanels/r);
+    h = zeros(Nclusters,Nclusters,Nparams);
+    p = zeros(Nclusters,Nclusters,Nparams);
+    ks2stat = zeros(Nclusters,Nclusters,Nparams);
+    effect = zeros(Nclusters,Nclusters,Nparams);
+    alpha = 0.05/Nparams; % Bonferroni correction for multiple comparisons
+
+    figure(900);
+    t900 = tiledlayout(r,c,'tilespacing','tight');
+    for k = 1:Nparams
+        for i = 1:Nclusters
+            X = drugParams(idx == clusters(i),k);
+            n1 = length(X);
+            for j = i+1:Nclusters
+                Y = drugParams(idx == clusters(j),k);
+                n2 = length(Y);
+
+                [~, p(i,j,k), ks2stat(i,j,k)] = kstest2(X,Y,'alpha',alpha);
+                D = calculateKScriticalValue(alpha,n1,n2);
+
+                h(i,j,k) = (ks2stat(i,j,k) > D); %hypothesis test
+                E = meanEffectSize(X,Y,Effect = 'cohen',VarianceType = 'unequal');
+                effect(i,j,k) = E.Effect;
+
+                nexttile; 
+                L = gardnerAltmanPlot(X,Y,Effect = 'cohen',...
+                                      VarianceType = 'unequal');
+                axis square;
+                % format plot
+                for o = 1:2
+                    L(o).MarkerEdgeColor = markerColors(o,:);
+                    L(o).Marker = markerChoice(o);
+                    L(o).LineWidth = 1;
+                end
+                L(3).Color = effectSizeLineColor;
+                L(3).LineWidth = 2;
+                
+                yyaxis left;
+                ylabel(ParamLabels(k),'Interpreter','latex')
+                set(gca,'XTickLabel',{num2str(clusters(i)),...
+                                      num2str(clusters(j)),"Cohen's d"},...
+                                     'TickLabelInterpreter','latex',...
+                                     'fontsize',12);
+                yyaxis right; set(gca,'YColor',effectSizeLineColor)
+                title(''); %remove default title applied by MATLAB
+            end
+        end
+    end
+    
+    plotEffectSizeBarPlot(clusters,h,effect,ParamLabels,901,'n');
+end
+
+%%
+
+function D = calculateKScriticalValue(alpha,n1,n2)
+    cAlpha = sqrt(-log(alpha/2)*0.5); % prefactor for KS test critical value
+    D = cAlpha * sqrt((n1+n2)/(n1*n2)); % critical value
+end
+
+%%
+
+function plotEffectSizeBarPlot(clusters,h,E,ParamLabels,figNum,subgroupFlag)
+
+    d = size(h);
+    Nparams = d(end);
+    pairings = nchoosek(clusters,2);
+    Npairings = size(pairings,1);
+    colors = [[235 254 255];
+              [8 42 84];
+              [68 109 139];
+              [144 180 194]]./256;
+
+    rankCriterion = size(E);
+    rankCriterion = length(rankCriterion);
+    if rankCriterion == 3
+        EReshaped = zeros(Npairings,Nparams);
+        hReshaped = zeros(Npairings,Nparams);
+        for i = 1:Npairings
+            for j = 1:Nparams
+                EReshaped(i,j) = E(pairings(i,1),pairings(i,2),j);
+                hReshaped(i,j) = h(pairings(i,1),pairings(i,2),j);
+            end
+        end
+    else 
+        EReshaped = E;
+        hReshaped = h;
+    end
+    
+    %% make effect size bar plot
+    figure(figNum); hold off;
+    b = bar(EReshaped');
+    barNumber = size(b,2);
+    if  barNumber > 1
+        for j = 1:barNumber
+            b(j).FaceColor = colors(mod(j,5)+1,:);
+        end
+    else 
+        b.FaceColor = colors(2,:);
+    end
+
+    %% Positions for significance indicators
+    significanceFlags = hReshaped.*sign(EReshaped).*(abs(EReshaped)+0.2);
+    significanceFlags(significanceFlags==0) = NaN;
+    hold on;
+    pause(5);
+
+    %% Plot significance indicators 
+    
+    if barNumber > 1
+        for i = 1:barNumber 
+            x = b(i).XData + b(i).XOffset;
+            plot(x,significanceFlags(i,:),'k*','MarkerSize',12);           
+        end
+    else
+        plot(b.XData,...
+            significanceFlags(1,:),'k*','MarkerSize',12);
+    end
+
+    %% Format plot
+    axis square;
+    set(gca,'fontsize',18,'TickLabelInterpreter','latex','xticklabel',ParamLabels)
+    ylabel("effect size (Cohen's d)",'interpreter','latex','Rotation',90);
+    if strcmp(subgroupFlag,'n')
+        legend(strcat('cluster$\ $',num2str(clusters(pairings(:,1))),...
+              '$\ $vs.$\ $',num2str(clusters(pairings(:,2)))),...
+              'interpreter','latex','location','northwest')
+    elseif strcmp(subgroupFlag,'y')
+        legend(strcat('cluster$\ $',num2str(clusters)),...
+              'interpreter','latex','location','northwest')
+    end
+    xlim([0.25 Nparams+.75])
+end
+
+%%
+
+function [Xwh, mu, invMat, whMat] = whiten(X,idx,epsilon)
+    %
+    % Modified from author: Colorado Reed colorado-reed@uiowa.edu
+    if ~exist('epsilon','var')
+        epsilon = 0.0001;
+    end
+    ids = unique(idx)';
+    N = zeros(length(ids),1);
+    index = 0;
+    features = size(X,2);
+    sigma = zeros(features,features);
+
+    for i = ids
+        index = index + 1;
+        N(index) = sum(idx == i);
+        A = X(idx==i,:);
+        mu = mean(A); 
+        A = bsxfun(@minus, A, mu); 
+        S = A'*A;
+        sigma = sigma + S * (N(index)-1);
+    end
+
+    sigma = sigma ./ (sum(N)-length(ids));
+    [V,D,~] = svd(sigma);
+    whMat = sqrt(size(X,1)-1)*V*sqrtm(inv(D + eye(size(D))*epsilon))*V';
+    Xwh = X*whMat;  
+    invMat = pinv(whMat);
+end
+
+%%
+
+function [whitenedParams, WhiteningMeans, WhiteningMatrix] = pooledVarianceWhitening(data,idx)
+    normParams = data./vecnorm(data);
+    muParams = zeros(size(normParams));
+    for i = unique(idx)'
+        muParams(idx==i,:) = muParams(idx==i,:)...
+                           + mean(normParams(idx==i,:));
+    end
+    [whitenedParams, WhMu, ~, WhiteningMatrix] = whiten(normParams - muParams,idx,1e-8); 
+    WhMu = (muParams + WhMu) * WhiteningMatrix;
+    whitenedParams = whitenedParams + WhMu;
+
+    WhiteningMeans = zeros(length(unique(idx)),size(data,2));
+    for i = unique(idx)'
+        a = find(idx==i);
+        WhiteningMeans(i,:) = WhMu(a(1),:);
+    end
 end
