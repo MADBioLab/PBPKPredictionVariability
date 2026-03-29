@@ -5,7 +5,7 @@ function DrugP = SimulatePBPK(DrugP,Tmax)
     % Tmax - simulation timespan of interest, in hours
 
     %% time span for ODE solution
-    tspan =[0,hrs2sec(Tmax)]; %[seconds]
+    tspan = [0,hrs2sec(Tmax)]; %[seconds]
     
     %% Set up structures with physiological parameters etc.
     % Y - struct to contain organ subcompartment concentrations for all
@@ -131,20 +131,20 @@ end
 %%
 
 function t=hrs2sec(x)
-    t=x*3600;
+    t = x * 3600;
 end
 
 %%
 
 function t=secs2hrs(x)
-    t=x/3600;
+    t = x / 3600;
 end
 
 %%
 
 function [Cmax,AUC,MRT,CL,Vss,thalf] = NCAcalc(C,t,dose,bodywt)
     %% omit any terminal points that are zeros
-    t=t(C>0);C=C(C>0);
+    t = t(C>0);C=C(C>0);
 
     %% estimate terminal decay rate
     % perform linear fit over last 10% of concentration-timecourse
@@ -152,7 +152,7 @@ function [Cmax,AUC,MRT,CL,Vss,thalf] = NCAcalc(C,t,dose,bodywt)
     pfit = polyfit(t(end-integ_offset:end),log(C(end-integ_offset:end)),1);
     k = -pfit(1); % [1/time]
     thalf = secs2hrs(log(2)/k);
-    [Cmax,maxloc]=max(C); %value and location of maximum concentration in array
+    [Cmax,maxloc] = max(C); %value and location of maximum concentration in array
     
     %% divide data into arrays prior to Cmax and post Cmax
     t1 = t(1:maxloc); C1=C(1:maxloc);
@@ -185,9 +185,9 @@ end
 %%
 
 function f = trapzlog(x,y)
-    f=0;
-    dx=diff(x);
-    for i=1:length(y)-1
+    f = 0;
+    dx = diff(x);
+    for i = 1:length(y)-1
         f = f + dx(i)*(y(i+1)-y(i))/log(y(i+1)/y(i));
     end
 end

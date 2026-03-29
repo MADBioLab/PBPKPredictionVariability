@@ -107,7 +107,7 @@ function [MCoutcomes,nominalOutcomes] = sampleAndSimulate(...
 
     %% run MC simulations 
     parfor i = 1:Nsamples+1
-        P=struct;
+        P = struct;
         P.species = species;
         P.dose = dose;
         P.dose_duration = dose_duration;

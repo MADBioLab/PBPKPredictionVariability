@@ -1,35 +1,36 @@
 function Params=MathewKpuModel(Params)
+
     %% read in input parameters
     if strcmp(Params.species,'hum')
-        physparams=importdata('tissueCompositionParamsHuman.csv');
+        physparams = importdata('tissueCompositionParamsHuman.csv');
     elseif strcmp(Params.species,'rat')
-        physparams=importdata('tissueCompositionParamsRat.csv');
+        physparams = importdata('tissueCompositionParamsRat.csv');
     end
 
-    tissues=physparams.textdata(2:end,1);
-    physparams=physparams.data;
-    tissueNames=[Params.tissueNames;'RBCs'];
-    Ntissues=length(tissueNames); 
+    tissues = physparams.textdata(2:end,1);
+    physparams = physparams.data;
+    tissueNames = [Params.tissueNames;'RBCs'];
+    Ntissues = length(tissueNames); 
 
     %fractional tissue volumes occupied by:
-    fNL=physparams(:,1);        %neutral lipids
-    fNP=physparams(:,2);        %neutral phospholipids
-    fEW=physparams(:,3);        %extracellular water
-    fIW=physparams(:,4);        %intracellular water    
-    lipoprot=physparams(:,5);   %lipoproteins
-    Alb=physparams(:,6);        %albumin
-    APfrac=physparams(:,7);     %acidic phospholipids
+    fNL = physparams(:,1);        %neutral lipids
+    fNP = physparams(:,2);        %neutral phospholipids
+    fEW = physparams(:,3);        %extracellular water
+    fIW = physparams(:,4);        %intracellular water    
+    lipoprot = physparams(:,5);   %lipoproteins
+    Alb = physparams(:,6);        %albumin
+    APfrac = physparams(:,7);     %acidic phospholipids
 
     %normalize tissue fractions
-    Total=fNL+fNP+fEW+fIW+APfrac;
-    fNL=fNL./Total;
-    fNP=fNP./Total;
-    fEW=fEW./Total;
-    fIW=fIW./Total;
-    APfrac=APfrac./Total;
+    Total = fNL+fNP+fEW+fIW+APfrac;
+    fNL = fNL./Total;
+    fNP = fNP./Total;
+    fEW = fEW./Total;
+    fIW = fIW./Total;
+    APfrac = APfrac./Total;
 
     %% Impose lower bound on Kpu
-    Params.fu=max([Params.fu,1e-4]);
+    Params.fu = max([Params.fu,1e-4]);
     
     %% physiological pH values
     pHIW = 7.0;        %intracellular water
@@ -43,12 +44,12 @@ function Params=MathewKpuModel(Params)
 
     %% logP calculations (including logD and logPvow conversions)    
     % infer logP from logD74 and ionization microstates
-    Params.logP=calcLogP(fI,Params.logD74);
-    P=10^Params.logP;
+    Params.logP = calcLogP(fI,Params.logD74);
+    P = 10^Params.logP;
 
     % for adipose: estimate vegetable oil-water partitioning from octanol
     % water partitioning
-    logPvow=1.115*Params.logP-1.35;
+    logPvow = 1.115*Params.logP-1.35;
     Pvow = 10^logPvow;    
     
     %% Define function to calculate total neutral lipid and neutral phospholipid association
@@ -69,8 +70,8 @@ function Params=MathewKpuModel(Params)
     KaplFunc = @(fn,fz,fa,fc,Knpl) Knpl*((fn) + 0.05 * fa + 20*(fc+fz));
 
     %% Calculate tissue partitioning for each organ and red blood cells 
-    Params.Kpu=zeros(Ntissues,1);    
-    Params.IW2EW=zeros(Ntissues,1);
+    Params.Kpu = zeros(Ntissues,1);    
+    Params.IW2EW = zeros(Ntissues,1);
 
     for j=[1:Ntissues-2,Ntissues]
         P=10^Params.logP;
@@ -82,8 +83,8 @@ function Params=MathewKpuModel(Params)
         %% total tissue partitioning
         Params.IW2EW(j) = fI.fN/(fI_IW.fN+eps);         
         Params.Kpu(j) = fEW(j)+Ka*((1-fI.fN)*Alb(j) + fI.fN * lipoprot(j)) ...
-                        + Params.IW2EW(j) * (fIW(j)+fI_IW.fC*Kapl*APfrac(j)) ...
-                        +  fI.fN * lipidBindFunc(fNL(j),fNP(j),P); 
+                      + Params.IW2EW(j) * (fIW(j)+fI_IW.fC*Kapl*APfrac(j)) ...
+                      + fI.fN * lipidBindFunc(fNL(j),fNP(j),P); 
     
         Params.(strcat('Kpu_',(tissueNames{j}))) = Params.Kpu(j);
       
@@ -114,23 +115,23 @@ end
 
 function fI = SimCypIon(pKa_a,pKa_b,pH)
     %% classify whether site should be considered ionizable 
-    pKAcidLim=9.4; %acidic site if pKa_a<9.4
-    pKBaseLim=5.4; %basic site if pKa_b>5.4
+    pKAcidLim = 9.4; %acidic site if pKa_a<9.4
+    pKBaseLim = 5.4; %basic site if pKa_b>5.4
     
     %% classify ion class of molecule
-    if pKa_a<=pKAcidLim
-        fI.chargeType='acid';
-        if pKa_b>pKBaseLim
-            fI.chargeType='zwit';
+    if pKa_a <= pKAcidLim
+        fI.chargeType = 'acid';
+        if pKa_b > pKBaseLim
+            fI.chargeType = 'zwit';
         end
-    elseif pKa_b>pKBaseLim
-        fI.chargeType='base';
+    elseif pKa_b > pKBaseLim
+        fI.chargeType = 'base';
     else
-        fI.chargeType='neut';
+        fI.chargeType = 'neut';
     end
 
     %Convert pKas to arrays because function assumes up to 2 ionizable sites of each type
-    pKa_a=[pKa_a,14]; pKa_b=[pKa_b,0]; 
+    pKa_a = [pKa_a,14]; pKa_b=[pKa_b,0]; 
     
     KaA1 = 10 ^ (-pKa_a(1));
     KaA2 = 10 ^ (-pKa_a(2));

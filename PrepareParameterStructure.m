@@ -36,7 +36,7 @@ function [Y,Params] = PrepareParameterStructure(Params)
     %% unit conversions and other calculations (e.g., scaling for bodyweight)
     compartmentVolumes = compartmentVolumes...
                        * Params.bodyWeight; % [L]
-    compartmentFlows  = compartmentFlows...
+    compartmentFlows = compartmentFlows...
                       * Params.bodyWeight^0.75/1e3/60; % [L/s]
     CardiacOutput = CardiacOutput ...
                   * Params.bodyWeight^0.75/1e3/60; % [L/s]
@@ -56,7 +56,7 @@ function [Y,Params] = PrepareParameterStructure(Params)
 
     %% Load physiological parameters into parameter structure
     Params.Volumes=[compartmentVolumes; RBCVol]; %[L]    
-    for i=1:Params.compartmentNumber
+    for i = 1:Params.compartmentNumber
         Params.(strcat('V_',(Params.compartmentNames{i}))) = Params.Volumes(i);
         Params.(strcat('V_vasc_',(Params.compartmentNames{i}))) = ...
                             Params.Volumes(i).*vascFraction(i);
@@ -79,20 +79,21 @@ function [Y,Params] = PrepareParameterStructure(Params)
         Y.(strcat('Cpu_',(Params.compartmentNames{i}))) = 0;
     end
 
-    Params.Q_Vein=CardiacOutput;
-    Params.Q_Artery=CardiacOutput;
-    Params.Q_Lung=CardiacOutput;
+    Params.Q_Vein = CardiacOutput;
+    Params.Q_Artery = CardiacOutput;
+    Params.Q_Lung = CardiacOutput;
 
     % calculate hepatic artery flowrate
-    Params.Q_Liver_hep=Params.Q_Liver-Params.Q_Spleen-Params.Q_Gut; % [L/s]
+    Params.Q_Liver_hep = Params.Q_Liver-Params.Q_Spleen-Params.Q_Gut; % [L/s]
 
     %% Estimate properties for 'RestOfBody" compartment
     % RestOfBody represents all organ volume and blood flow not accounted
     % for in the organs that are explicit in the model.
-    AvgVascFraction=mean(vascFraction(3:end));
+    AvgVascFraction = mean(vascFraction(3:end));
+
     %calculate blood flows not otherwise accounted for (discrepancy between
     %organs and total cardiac output
-    Params.Q_RestOfBody=CardiacOutput...
+    Params.Q_RestOfBody = CardiacOutput...
                 -(sum(compartmentFlows(4:Params.compartmentNumber-4))...
                 +Params.Q_Liver_hep);
                 

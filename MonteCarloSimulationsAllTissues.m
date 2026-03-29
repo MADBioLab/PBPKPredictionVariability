@@ -9,7 +9,6 @@ function MonteCarloSimulationsAllTissues(referenceProperties, Nsamples, errorSca
     parpool(nprocs);
     rng(52897696);
 
-
     %% specify drug dose, infusion duration, and simulation time
     dose = 15; %[mg/kg]
     dose_duration = mins2secs(1); %[s]
@@ -88,8 +87,8 @@ function [MCoutcomes,nominalOutcomes] = sampleAndSimulate(...
     end
     
     %% convert logCLint to CLint
-    distributedParams(:,5)=10.^distributedParams(:,5); 
-    propertyInputs(5)=10^propertyInputs(5);
+    distributedParams(:,5) = 10.^distributedParams(:,5); 
+    propertyInputs(5) = 10^propertyInputs(5);
 
     %%  define complete property arrays
     allProperties = [propertyInputs;distributedParams];
@@ -130,18 +129,18 @@ function [MCoutcomes,nominalOutcomes] = sampleAndSimulate(...
         P.KpuFunc = @PearceNoCorrectionsKpuModel;
         P4 = SimulatePBPK(P,Tmax);
 
-        Vdeq(i,:)=[P1.Vdeq,P2.Vdeq,P3.Vdeq,P4.Vdeq];
-        AUCu(i,:,:)=secs2mins([P1.AUCu';...
+        Vdeq(i,:) = [P1.Vdeq,P2.Vdeq,P3.Vdeq,P4.Vdeq];
+        AUCu(i,:,:) = secs2mins([P1.AUCu';...
                              P2.AUCu';...
                              P3.AUCu';...
                              P4.AUCu']); %uM.min
 
-        Cmaxu(i,:,:)=[P1.Cmaxu';...
+        Cmaxu(i,:,:) = [P1.Cmaxu';...
                     P2.Cmaxu';...
                     P3.Cmaxu';...
                     P4.Cmaxu']; %uM
 
-        T0_1uM(i,:,:)=[P1.T0_1uM';...
+        T0_1uM(i,:,:) = [P1.T0_1uM';...
                    P2.T0_1uM';...
                    P3.T0_1uM';...
                    P4.T0_1uM']; %hrs    
@@ -182,7 +181,7 @@ function distributedParams = sampleDistribution(theta,MAE,sampleType,Nsamples,ma
 
     elseif strcmp(sampleType,'Beta')
 
-        distributedParams=generate_dist(theta,MAE,sampleType,Nsamples,maxmin);
+        distributedParams = generate_dist(theta,MAE,sampleType,Nsamples,maxmin);
 
     end
 end
@@ -200,7 +199,7 @@ function f = generate_dist(mu,MAE,sampleType,N,maxmin)
 
         % find beta distribution parameters that provide desired mean and
         % error
-        [a,b]=findBeta(mu,MAE);
+        [a,b] = findBeta(mu,MAE);
 
         % sample from parameterized beta distribution and scale to desired
         % domain

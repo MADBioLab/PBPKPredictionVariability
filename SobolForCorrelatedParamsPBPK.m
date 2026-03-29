@@ -155,10 +155,10 @@ function SobolForCorrelatedParamsPBPK(ReferenceData)
         end
 
         %determine sensitivity indices for all outcomes of interest
-        [TCj(j,:),TUj(j,:)]=calcIndices(f);
+        [TCj(j,:),TUj(j,:)] = calcIndices(f);
 
         %collect function outputs for bootstrapping
-        fmatrix(:,:,:,j)=f;
+        fmatrix(:,:,:,j) = f;
         toc
     end    
 
@@ -174,8 +174,8 @@ function SobolForCorrelatedParamsPBPK(ReferenceData)
     confidenceIntervalTUj = quantile(TUjSub,[0.025,0.975],1);
 
     %% ranksum statistical test for equality of medians
-    for j=1:Nparams
-        for i=1:Noutcomes
+    for j = 1:Nparams
+        for i = 1:Noutcomes
             [pval(j,i,1),nullHyp(j,i,1)] = ranksum(TCjSub(:,j,i),TCjSub(:,j,end));
             [pval(j,i,2),nullHyp(j,i,2)] = ranksum(TUjSub(:,j,i),TUjSub(:,j,end));
         end
@@ -220,8 +220,8 @@ function [TCj,TUj]=calcIndices(f)
     Sy_56 = f(:,:,2) .* (f(:,:,4) - f(:,:,1)) ./ D;
     Ty_54 = (f(:,:,1) - f(:,:,3)) .^ 2 ./ (2 * D);
 
-    TCj=mean(Sy_56,1);
-    TUj=mean(Ty_54,1);
+    TCj = mean(Sy_56,1);
+    TUj = mean(Ty_54,1);
 
 end
 
@@ -242,13 +242,13 @@ function output=PBPK4Sobol(pars)
     P.ctrl = pars(7);
 
     %specify Kpu model
-    P.KpuFunc=@AkpaFarahatKpuModel; 
+    P.KpuFunc = @AkpaFarahatKpuModel; 
 
     % execute PBPK simulation
-    P=SimulatePBPK(P,48); %48 hr timespan 
+    P = SimulatePBPK(P,48); %48 hr timespan 
 
     % output outcomes of interest
-    output=[P.Vdeq,P.thalf,P.Kp([1:11,13])',P.Cmaxu',P.AUCu',P.T0_1uM',P.ctrl];    
+    output = [P.Vdeq,P.thalf,P.Kp([1:11,13])',P.Cmaxu',P.AUCu',P.T0_1uM',P.ctrl];    
 end
 
 %%
@@ -265,7 +265,7 @@ function [covMat,data]=ParameterCopulaRefArray(data)
 
     %% copula fit and sampling
     [Npts,Nprops] = size(data);
-    kdata=zeros(Npts,Nprops);
+    kdata = zeros(Npts,Nprops);
     nudge = 1e-10;
     lb = min(data) - nudge; %lower bound
     ub = max(data) + nudge; %upper bound
@@ -283,7 +283,7 @@ function [covMat,data]=ParameterCopulaRefArray(data)
     kdata(kdata > 1-nudge) = 1-nudge;
     rhohat = copulafit('Gaussian',kdata);
     x = copularnd('Gaussian',rhohat,10000); 
-    covMat=cov(x);
+    covMat = cov(x);
 
 end
 
@@ -292,7 +292,7 @@ end
 function inverted=invertCopula(Data,samples,mu,CovMat)
 
     % {'RMM','pKa_a','pKa_b','fu','logCLint','logD74'}$; 
-    [~,Nprops]=size(Data);  
+    [~,Nprops] = size(Data);  
     nudge = 1e-10;
     lb = min(Data) - nudge; %lower bound
     ub = max(Data) + nudge; %upper bound
@@ -309,6 +309,6 @@ function inverted=invertCopula(Data,samples,mu,CovMat)
                            'function','icdf');  
     end
 
-    inverted(:,5)=10.^inverted(:,5); %convert logCLint to CLint
+    inverted(:,5) = 10.^inverted(:,5); %convert logCLint to CLint
 
 end
