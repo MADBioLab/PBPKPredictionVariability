@@ -271,7 +271,7 @@ function [covMat,data]=ParameterCopulaRefArray(data)
     ub = max(data) + nudge; %upper bound
     
     %% fit kernel cdf to data
-    for i=1:Nprops
+    parfor i=1:Nprops
         yy=data(:,i);
         [kdata(:,i),~] = ksdensity(yy,yy,'Support',[lb(i),ub(i)],...
                         'BoundaryCorrection','reflection',...
@@ -303,7 +303,7 @@ function inverted=invertCopula(Data,samples,mu,CovMat)
     mus = mu.*ones(size(samples));
     samples = normcdf(samples,mus,sigmas);
 
-    for i=1:Nprops
+    parfor i=1:Nprops
         [inverted(:,i),~] = ksdensity(Data(:,i),samples(:,i),'Support',[lb(i),ub(i)],...
                            'BoundaryCorrection','reflection',...
                            'function','icdf');  
