@@ -1,8 +1,7 @@
 # PBPKPredictionVariability
 
-
-Code + data for: Farahat et al. (2025), *Prediction variability in physiologically based pharmacokinetic modeling of tissue disposition under deep epistemic uncertainty*  
-Preprint DOI: 10.64898/2025.12.05.692437
+Code + data for: Farahat et al. (2026)
+Farahat, M., Flaherty, D.T., Fox, Z.R., Akpa B.S. Prediction variability in physiologically based pharmacokinetic modeling of tissue disposition under deep uncertainty. npj Syst Biol Appl (2026). https://doi.org/10.1038/s41540-026-00739-7
 
 Zenodo archive: TBD (will be added after release)
 ---
